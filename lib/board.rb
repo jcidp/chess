@@ -2,18 +2,22 @@
 
 require "./lib/piece/knight"
 require "./lib/piece/bishop"
+require "./lib/piece/rook"
+require "./lib/piece/queen"
+require "./lib/piece/king"
+require "./lib/piece/pawn"
 
 # Build and control the board for the game
 class Board
   def reset
     self.board = Array.new(8) do |row|
       case row
-      when 0 then ["\u2656", Knight.new("white"), Bishop.new("white"), "\u2655", "\u2654", Bishop.new("white"),
-                   Knight.new("white"), "\u2656"]
-      when 1 then ["\u2659", "\u2659", "\u2659", "\u2659", "\u2659", "\u2659", "\u2659", "\u2659"]
-      when 6 then ["\u265F", "\u265F", "\u265F", "\u265F", "\u265F", "\u265F", "\u265F", "\u265F"]
-      when 7 then ["\u265C", Knight.new("black"), Bishop.new("black"), "\u265B", "\u265A", Bishop.new("black"),
-                   Knight.new("black"), "\u265C"]
+      when 0 then [Rook.new("white"), Knight.new("white"), Bishop.new("white"), Queen.new("white"), King.new("white"),
+                   Bishop.new("white"), Knight.new("white"), Rook.new("white")]
+      when 1 then Array.new(8) { Pawn.new("white") }
+      when 6 then Array.new(8) { Pawn.new("black") }
+      when 7 then [Rook.new("black"), Knight.new("black"), Bishop.new("black"), Queen.new("black"), King.new("black"),
+                   Bishop.new("black"), Knight.new("black"), Rook.new("black")]
       else Array.new(8)
       end
     end
@@ -36,9 +40,8 @@ class Board
     puts "  #{'-' * 33}"
     7.downto(0) do |row|
       puts(8.times.reduce("#{row + 1} |") do |str, col|
-        char = board.dig(row, col)
-        char = char.is_a?(Knight) || char.is_a?(Bishop) ? char.code : char
-        "#{str} #{char ? char.encode('utf-8') : ' '} |"
+        square = board.dig(row, col)
+        "#{str} #{square ? square.code.encode('utf-8') : ' '} |"
       end)
       puts "  |#{'---|' * 8}" unless row.zero?
     end
@@ -73,20 +76,20 @@ end
 
 board = Board.new
 board.display
-# board.move_piece([0, 1], [2, 2])
-# board.display
+board.move_piece([0, 1], [2, 2])
+board.display
 board.move_piece([0, 6], [2, 7])
 board.move_piece([2, 7], [3, 5])
-# board.display
-# board.move_piece([2, 2], [4, 3])
-# board.move_piece([7, 6], [5, 5])
-# board.display
-# board.move_piece([4, 3], [3, 5])
-# board.move_piece([4, 3], [4, 4])
-# board.display
-# board.move_piece([4, 3], [5, 5])
-# board.display
-board.move_piece([0, 2], [3, 5])
+board.display
+board.move_piece([2, 2], [4, 3])
+board.move_piece([7, 6], [5, 5])
+board.display
+board.move_piece([4, 3], [3, 5])
+board.move_piece([4, 3], [4, 4])
+board.display
+board.move_piece([4, 3], [5, 5])
+board.display
+board.move_piece([0, 2], [1, 3])
 board.move_piece([0, 2], [5, 7])
 board.display
 board.move_piece([7, 5], [5, 7])
