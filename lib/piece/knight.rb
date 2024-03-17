@@ -10,6 +10,10 @@ class Knight
     (row_abs_diff == 1 && col_abs_diff == 2) || (row_abs_diff == 2 && col_abs_diff == 1)
   end
 
+  def path(*)
+    []
+  end
+
   private
 
   attr_writer :code, :color, :type

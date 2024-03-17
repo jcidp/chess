@@ -10,6 +10,19 @@ class Bishop
     row_abs_diff == col_abs_diff
   end
 
+  def path(from, to)
+    result = []
+    row_sign = (to[0] - from[0]).positive? ? :+ : :-
+    col_sign = (to[1] - from[1]).positive? ? :+ : :-
+    current_square = from.dup
+    while current_square != to
+      current_square[0] = current_square[0].send(row_sign, 1)
+      current_square[1] = current_square[1].send(col_sign, 1)
+      result << current_square.dup unless current_square == to
+    end
+    result
+  end
+
   private
 
   attr_writer :code, :color, :type
