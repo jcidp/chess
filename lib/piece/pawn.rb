@@ -30,6 +30,18 @@ class Pawn
     []
   end
 
+  def adjacent_squares(from)
+    row, col = from
+    sign = color == "white" ? :+ : :-
+    hash = {}
+    [1, 2].each do |num|
+      square = [row.send(sign, num), col]
+      hash[square] = [square] if num == 1
+      hash[square] = [[row.send(sign, 1), col], square] if num == 2 && unmoved
+    end
+    hash
+  end
+
   private
 
   attr_writer :code, :color, :type

@@ -23,6 +23,22 @@ class Rook
     result
   end
 
+  def adjacent_squares(from)
+    result = {}
+    %i[+ -].each do |symbol|
+      %w[row col].each do |direction|
+        row, col = from
+        while row.between?(0, 7) && col.between?(0, 7)
+          row = row.send(symbol, 1) if direction == "row"
+          col = col.send(symbol, 1) if direction == "col"
+          to = [row, col]
+          result[to] = path(from, to) if row.between?(0, 7) && col.between?(0, 7)
+        end
+      end
+    end
+    result
+  end
+
   private
 
   attr_writer :code, :color, :type

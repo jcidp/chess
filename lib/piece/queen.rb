@@ -23,6 +23,10 @@ class Queen
     result
   end
 
+  def adjacent_squares(from)
+    straight_adjecent_squares(from).merge(diagonal_adjecent_squares(from))
+  end
+
   private
 
   attr_writer :code, :color, :type
@@ -41,5 +45,40 @@ class Queen
     fixed_row = row_diff.zero?
     fixed_col = col_diff.zero?
     [row_sign, col_sign, fixed_row, fixed_col]
+  end
+
+  def diagonal_adjecent_squares(from)
+    result = {}
+    %i[+ -].each do |symbol|
+      %w[row col].each do |direction|
+        row, col = from
+        while row.between?(0, 7) && col.between?(0, 7)
+          row = row.send(symbol, 1) if direction == "row"
+          col = col.send(symbol, 1) if direction == "col"
+          to = [row, col]
+          result[to] = path(from, to) if row.between?(0, 7) && col.between?(0, 7)
+        end
+      end
+    end
+    result
+  end
+
+  def straight_adjecent_squares(from)
+    result = {}
+    symbol_combinations.each do |symbols|
+      row, col = from
+      while row.between?(0, 7) && col.between?(0, 7)
+        row = row.send(symbols[0], 1)
+        col = col.send(symbols[1], 1)
+        to = [row, col]
+        result[to] = path(from, to) if row.between?(0, 7) && col.between?(0, 7)
+      end
+    end
+    result
+  end
+
+  def symbol_combinations
+    arr = %i[+ -]
+    arr.product(arr)
   end
 end

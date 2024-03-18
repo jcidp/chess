@@ -24,6 +24,25 @@ class Bishop
     result
   end
 
+  def adjacent_squares(from)
+    result = {}
+    symbol_combinations.each do |symbols|
+      row, col = from
+      while row.between?(0, 7) && col.between?(0, 7)
+        row = row.send(symbols[0], 1)
+        col = col.send(symbols[1], 1)
+        to = [row, col]
+        result[to] = path(from, to) if row.between?(0, 7) && col.between?(0, 7)
+      end
+    end
+    result
+  end
+
+  def symbol_combinations
+    arr = %i[+ -]
+    arr.product(arr)
+  end
+
   private
 
   attr_writer :code, :color, :type
