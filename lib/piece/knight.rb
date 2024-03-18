@@ -2,6 +2,7 @@
 
 # Represents a knight piece
 class Knight
+  attr_accessor :unmoved
   attr_reader :code, :color, :type
 
   def valid_move?(from, to)

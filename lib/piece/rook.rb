@@ -2,6 +2,7 @@
 
 # Represents a Rook piece
 class Rook
+  attr_accessor :unmoved
   attr_reader :code, :color, :type
 
   def valid_move?(from, to)

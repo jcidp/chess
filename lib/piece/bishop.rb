@@ -2,6 +2,7 @@
 
 # Represents a Bishop piece
 class Bishop
+  attr_accessor :unmoved
   attr_reader :code, :color, :type
 
   def valid_move?(from, to)
