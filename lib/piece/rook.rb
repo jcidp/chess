@@ -5,10 +5,6 @@ class Rook
   attr_accessor :unmoved
   attr_reader :code, :color, :type
 
-  def valid_move?(from, to)
-    to[0] == from[0] || to[1] == from[1]
-  end
-
   def path(from, to)
     result = []
     row_sign = (to[0] - from[0]).positive? ? :+ : :-

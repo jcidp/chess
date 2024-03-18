@@ -5,12 +5,6 @@ class Bishop
   attr_accessor :unmoved
   attr_reader :code, :color, :type
 
-  def valid_move?(from, to)
-    row_abs_diff = (to[0] - from[0]).abs
-    col_abs_diff = (to[1] - from[1]).abs
-    row_abs_diff == col_abs_diff
-  end
-
   def path(from, to)
     result = []
     row_sign = (to[0] - from[0]).positive? ? :+ : :-

@@ -5,31 +5,6 @@ class Pawn
   attr_accessor :unmoved
   attr_reader :code, :color, :type
 
-  def valid_move?(from, to)
-    row_diff = to[0] - from[0]
-    row_abs_diff = row_diff.abs
-    col_abs_diff = (to[1] - from[1]).abs
-    direction = row_diff.positive? ? "white" : "black"
-    col_abs_diff.zero? && direction == color && (row_abs_diff == 1 || (row_abs_diff == 2 && unmoved))
-  end
-
-  def valid_take?(from, to)
-    row_diff = to[0] - from[0]
-    row_abs_diff = row_diff.abs
-    col_abs_diff = (to[1] - from[1]).abs
-    direction = row_diff.positive? ? "white" : "black"
-    row_abs_diff == 1 && col_abs_diff == 1 && direction == color
-  end
-
-  def path(from, to)
-    row_diff = to[0] - from[0]
-    if row_diff.abs == 2
-      row_sign = row_diff.positive? ? :+ : :-
-      return [[from[0].send(row_sign, 1), from[1]]]
-    end
-    []
-  end
-
   def adjacent_squares(from)
     row, col = from
     sign = color == "white" ? :+ : :-

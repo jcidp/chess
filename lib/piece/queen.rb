@@ -5,12 +5,6 @@ class Queen
   attr_accessor :unmoved
   attr_reader :code, :color, :type
 
-  def valid_move?(from, to)
-    row_abs_diff = (to[0] - from[0]).abs
-    col_abs_diff = (to[1] - from[1]).abs
-    row_abs_diff == col_abs_diff || row_abs_diff.zero? || col_abs_diff.zero?
-  end
-
   def path(from, to)
     result = []
     row_sign, col_sign, fixed_row, fixed_col = signs_and_fixed(from, to)

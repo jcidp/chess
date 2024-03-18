@@ -26,13 +26,13 @@ class Board
   # Assumes it receives arrays with 2 digits between 0-7
   def move_piece(from, to)
     piece = board.dig(from[0], from[1])
-    target = board.dig(to[0], to[1])
-    return false unless legal_move?(piece, target, from, to) # See what makes sense to return here
+    return false unless legal_move?(piece, from, to) # See what makes sense to return here
 
     piece.unmoved = false if piece.unmoved
     # In game logic, check if piece is pawn and if row is the other side to ask user promote input
     change_square(from, nil)
     change_square(to, piece)
+    take_en_passant(piece.color, to) if to == en_passant[:square] && en_passant[:color] != piece.color
     update_en_passant(piece, from, to)
   end
 
@@ -62,23 +62,35 @@ class Board
     self.en_passant = { color: nil, square: nil }
   end
 
-  def legal_move?(piece, target, from, to)
-    valid_move?(piece, target) && piece.valid_move?(from, to) && clear_path?(piece.path(from, to)) ||
-      piece.type == "pawn" && valid_pawn_take?(piece, target, to) && piece.valid_take?(from, to)
+  def legal_move?(piece, from, to)
+    valid_adjacent_squares(piece, from).keys.include?(to)
   end
 
-  def valid_move?(piece, target)
-    return false if piece.nil?
+  def valid_adjacent_squares(piece, from)
+    valid_squares = clean_adjacent_list(piece, from)
+    return valid_squares.merge(pawn_takes(piece, from)) if piece.type == "pawn"
 
-    target.nil? || piece.color != target.color
+    valid_squares
   end
 
-  def valid_pawn_take?(piece, target, to)
-    if to == en_passant[:square] && en_passant[:color] != piece.color
-      take_en_passant(piece.color, to)
-      return true
+  def clean_adjacent_list(piece, from)
+    piece.adjacent_squares(from).filter do |to, path|
+      target = board.dig(to[0], to[1])
+      (target.nil? || target.color != piece.color) && clear_path?(path)
     end
-    !target.nil? && target.color != piece.color
+  end
+
+  def pawn_takes(pawn, from)
+    sign = pawn.color == "white" ? :+ : :-
+    takes = {}
+    row = from[0].send(sign, 1)
+    %i[+ -].each do |col_symbol|
+      col = from[1].send(col_symbol, 1)
+      take_option = board.dig(row, col) || en_passant[:square]
+      take_color = en_passant[:color] || take_option&.color
+      takes[[row, col]] = [] if take_option && take_color != pawn.color
+    end
+    takes
   end
 
   def change_square(square, value)

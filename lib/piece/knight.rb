@@ -5,16 +5,6 @@ class Knight
   attr_accessor :unmoved
   attr_reader :code, :color, :type
 
-  def valid_move?(from, to)
-    row_abs_diff = (to[0] - from[0]).abs
-    col_abs_diff = (to[1] - from[1]).abs
-    (row_abs_diff == 1 && col_abs_diff == 2) || (row_abs_diff == 2 && col_abs_diff == 1)
-  end
-
-  def path(*)
-    []
-  end
-
   def adjacent_squares(from)
     result = {}
     symbol_combinations.each do |symbols|

@@ -5,29 +5,6 @@ require "./lib/piece/rook"
 describe Rook do
   subject(:test_rook) { described_class.new("white") }
 
-  describe "#valid_move?" do
-    it "returns true from 2,2 to 2,0" do
-      from = [2, 2]
-      to = [2, 0]
-      result = test_rook.valid_move?(from, to)
-      expect(result).to be true
-    end
-
-    it "returns true from 7,5 to 1,5" do
-      from = [7, 5]
-      to = [1, 5]
-      result = test_rook.valid_move?(from, to)
-      expect(result).to be true
-    end
-
-    it "returns false from 0,1 to 1,2" do
-      from = [0, 1]
-      to = [1, 2]
-      result = test_rook.valid_move?(from, to)
-      expect(result).to be false
-    end
-  end
-
   describe "#path" do
     context "when moving from 3,0 to 3,7" do
       it "returns the correct horizontal path" do
