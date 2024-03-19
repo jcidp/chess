@@ -5,6 +5,10 @@ class Knight
   attr_accessor :unmoved
   attr_reader :code, :color, :type
 
+  def path(*)
+    []
+  end
+
   def adjacent_squares(from)
     result = {}
     symbol_combinations.each do |symbols|

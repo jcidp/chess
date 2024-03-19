@@ -26,14 +26,45 @@ class Board
   # Assumes it receives arrays with 2 digits between 0-7
   def move_piece(from, to)
     piece = board.dig(from[0], from[1])
-    return false unless legal_move?(piece, from, to) # See what makes sense to return here
+    return false unless piece && legal_move?(piece, from, to) # See what makes sense to return here
 
     piece.unmoved = false if piece.unmoved
     # In game logic, check if piece is pawn and if row is the other side to ask user promote input
-    change_square(from, nil)
-    change_square(to, piece)
-    take_en_passant(piece.color, to) if to == en_passant[:square] && en_passant[:color] != piece.color
+    change_square(board, from, nil)
+    change_square(board, to, piece)
+    take_en_passant(board, piece.color, to) if to == en_passant[:square] && en_passant[:color] != piece.color
     update_en_passant(piece, from, to)
+  end
+
+  def check?(attacked_color)
+    board_check?(board, attacked_color)
+  end
+
+  def mate?(attacked_color)
+    king_square = find_king(board, attacked_color)
+    attacker_color = attacked_color == "white" ? "black" : "white"
+    attackers = checking_squares(attacker_color, king_square)
+    attackers.length.positive? &&
+      attackers.any? { |attacker_square| !mate_preventable?(attacked_color, attacker_square, king_square) }
+  end
+
+  def stalemate?(playing_color)
+    board.each_with_index do |row, i|
+      row.each_with_index do |piece, j|
+        next if piece.nil? || piece.color != playing_color
+
+        return false if can_move?(piece, [i, j])
+      end
+    end
+    true
+  end
+
+  def castle
+    nil
+  end
+
+  def promote(square)
+    square
   end
 
   # rubocop:disable Metrics/AbcSize
@@ -63,42 +94,62 @@ class Board
   end
 
   def legal_move?(piece, from, to)
-    valid_adjacent_squares(piece, from).keys.include?(to)
+    valid_adjacent_squares(board, piece, from).keys.include?(to) && !self_check?(from, to)
   end
 
-  def valid_adjacent_squares(piece, from)
-    valid_squares = clean_adjacent_list(piece, from)
-    return valid_squares.merge(pawn_takes(piece, from)) if piece.type == "pawn"
+  def valid_adjacent_squares(used_board, piece, from)
+    valid_squares = clean_adjacent_list(used_board, piece, from)
+    return valid_squares.merge(pawn_takes(used_board, piece, from)) if piece.type == "pawn"
 
     valid_squares
   end
 
-  def clean_adjacent_list(piece, from)
+  def clean_adjacent_list(used_board, piece, from)
     piece.adjacent_squares(from).filter do |to, path|
-      target = board.dig(to[0], to[1])
-      (target.nil? || target.color != piece.color) && clear_path?(path)
+      target = used_board.dig(to[0], to[1])
+      (target.nil? || target.color != piece.color) && clear_path?(used_board, path)
     end
   end
 
-  def pawn_takes(pawn, from)
+  def pawn_takes(used_board, pawn, from)
     sign = pawn.color == "white" ? :+ : :-
     takes = {}
     row = from[0].send(sign, 1)
     %i[+ -].each do |col_symbol|
       col = from[1].send(col_symbol, 1)
-      take_option = board.dig(row, col) || en_passant[:square]
+      take_option = used_board.dig(row, col) || en_passant[:square]
       take_color = en_passant[:color] || take_option&.color
       takes[[row, col]] = [] if take_option && take_color != pawn.color
     end
     takes
   end
 
-  def change_square(square, value)
-    board[square[0]][square[1]] = value
+  def board_check?(used_board, attacked_color)
+    attacked_king_position = find_king(used_board, attacked_color)
+    used_board.each_with_index do |row, i|
+      row.each_with_index do |piece, j|
+        return true if piece && piece.color != attacked_color &&
+                       valid_adjacent_squares(used_board, piece, [i, j]).keys.include?(attacked_king_position)
+      end
+    end
+    false
   end
 
-  def clear_path?(path)
-    path.all? { |square| board[square[0]][square[1]].nil? }
+  def self_check?(from, to)
+    fake_board = board_deep_copy
+    from_row, from_col = from
+    piece = fake_board.dig(from_row, from_col)
+    change_square(fake_board, from, nil)
+    change_square(fake_board, to, piece)
+    board_check?(fake_board, piece.color)
+  end
+
+  def change_square(used_board, square, value)
+    used_board[square[0]][square[1]] = value
+  end
+
+  def clear_path?(used_board, path)
+    path.all? { |square| used_board[square[0]][square[1]].nil? }
   end
 
   def update_en_passant(piece, from, to)
@@ -110,22 +161,93 @@ class Board
     self.en_passant = { color: piece.color, square: square }
   end
 
-  def take_en_passant(taking_color, to)
+  def take_en_passant(used_board, taking_color, to)
     sign = taking_color == "white" ? :- : :+
     taken_row = to[0].send(sign, 1)
-    change_square([taken_row, to[1]], nil)
+    change_square(used_board, [taken_row, to[1]], nil)
+  end
+
+  def find_king(used_board, color)
+    used_board.each_with_index do |row, i|
+      row.each_with_index do |piece, j|
+        return [i, j] if piece&.type == "king" && piece&.color == color
+      end
+    end
+  end
+
+  def board_deep_copy
+    copy = []
+    board.each do |row|
+      copy << row.dup
+    end
+    copy
+  end
+
+  def checking_squares(attacker_color, attacked_king_position)
+    squares = []
+    board.each_with_index do |row, i|
+      row.each_with_index do |piece, j|
+        next unless piece && piece.color == attacker_color
+
+        from = [i, j]
+        moves = valid_adjacent_squares(board, piece, from).keys
+        squares << from if moves.include?(attacked_king_position) && !self_check?(from, attacked_king_position)
+      end
+    end
+    squares
+  end
+
+  def mate_preventable?(attacked_color, attacker_square, king_square)
+    king_row, king_col = king_square
+    king = board.dig(king_row, king_col)
+    attacker_row, attacker_col = attacker_square
+    attacker_path = board.dig(attacker_row, attacker_col).path(attacker_square, king_square)
+    can_move?(king, king_square) || can_take?(attacker_square, attacked_color) ||
+      can_block?(attacker_path, attacked_color)
+  end
+
+  def can_move?(piece, from)
+    moves = valid_adjacent_squares(board, piece, from).keys
+    moves.any? { |move| !self_check?(from, move) }
+  end
+
+  def can_take?(attacker_square, attacked_color)
+    board.each_with_index do |row, i|
+      row.each_with_index do |piece, j|
+        next unless piece && piece.color == attacked_color
+
+        from = [i, j]
+        moves = valid_adjacent_squares(board, piece, from).keys
+        return true if moves.include?(attacker_square) && !self_check?(from, attacker_square)
+      end
+    end
+    false
+  end
+
+  def can_block?(attacker_path, attacked_color)
+    board.each_with_index do |row, i|
+      row.each_with_index do |piece, j|
+        next unless piece && piece.color == attacked_color
+
+        from = [i, j]
+        moves = valid_adjacent_squares(board, piece, from).keys
+        blocks = moves & attacker_path
+        return true if blocks.any? { |move| !self_check?(from, move) }
+      end
+    end
+    false
   end
 end
 
-board = Board.new
-board.display
-board.move_piece([6, 2], [4, 2])
-board.display
-board.move_piece([4, 2], [3, 2])
-board.display
-board.move_piece([1, 3], [3, 3])
-board.display
-board.move_piece([1, 2], [2, 3])
-board.display
-board.move_piece([3, 2], [2, 3])
-board.display
+# board = Board.new
+# board.display
+# board.move_piece([6, 2], [4, 2])
+# board.display
+# board.move_piece([4, 2], [3, 2])
+# board.display
+# board.move_piece([1, 3], [3, 3])
+# board.display
+# board.move_piece([1, 2], [2, 3])
+# board.display
+# board.move_piece([3, 2], [2, 3])
+# board.display
