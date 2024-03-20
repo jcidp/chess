@@ -9,24 +9,25 @@ require "./lib/piece/pawn"
 
 # Build and control the board for the game
 class Board
+  attr_accessor :winner
+
   def reset
-    self.board = Array.new(8) do |row|
-      case row
-      when 0 then [Rook.new("white"), Knight.new("white"), Bishop.new("white"), Queen.new("white"), King.new("white"),
-                   Bishop.new("white"), Knight.new("white"), Rook.new("white")]
-      when 1 then Array.new(8) { Pawn.new("white") }
-      when 6 then Array.new(8) { Pawn.new("black") }
-      when 7 then [Rook.new("black"), Knight.new("black"), Bishop.new("black"), Queen.new("black"), King.new("black"),
-                   Bishop.new("black"), Knight.new("black"), Rook.new("black")]
-      else Array.new(8)
-      end
+    reset_board
+    self.winner = nil
+  end
+
+  def move(color, from, to)
+    if ["O-O", "O-O-O"].include?(from)
+      castle(color, from, to)
+    else
+      move_piece(color, from, to)
     end
   end
 
   # Assumes it receives arrays with 2 digits between 0-7
-  def move_piece(from, to)
+  def move_piece(color, from, to)
     piece = board.dig(from[0], from[1])
-    return false unless piece && legal_move?(piece, from, to) # See what makes sense to return here
+    return false unless piece && piece.color == color && legal_move?(piece, from, to)
 
     piece.unmoved = false if piece.unmoved
     # In game logic, check if piece is pawn and if row is the other side to ask user promote input
@@ -34,10 +35,23 @@ class Board
     change_square(board, to, piece)
     take_en_passant(board, piece.color, to) if to == en_passant[:square] && en_passant[:color] != piece.color
     update_en_passant(piece, from, to)
+    true
   end
 
   def check?(attacked_color)
     board_check?(board, attacked_color)
+  end
+
+  def game_over?(attacked_color)
+    attacking_color = attacked_color == "white" ? "black" : "white"
+    check = check?(attacked_color)
+    if check && mate?(attacked_color)
+      self.winner = attacking_color
+    elsif check
+      puts "Check!"
+    elsif stalemate?(attacked_color)
+      self.winner = "tie"
+    end
   end
 
   def mate?(attacked_color)
@@ -59,7 +73,7 @@ class Board
     true
   end
 
-  def castle
+  def castle(type, color)
     nil
   end
 
@@ -91,6 +105,20 @@ class Board
   def initialize
     reset
     self.en_passant = { color: nil, square: nil }
+  end
+
+  def reset_board
+    self.board = Array.new(8) do |row|
+      case row
+      when 0 then [Rook.new("white"), Knight.new("white"), Bishop.new("white"), Queen.new("white"), King.new("white"),
+                   Bishop.new("white"), Knight.new("white"), Rook.new("white")]
+      when 1 then Array.new(8) { Pawn.new("white") }
+      when 6 then Array.new(8) { Pawn.new("black") }
+      when 7 then [Rook.new("black"), Knight.new("black"), Bishop.new("black"), Queen.new("black"), King.new("black"),
+                   Bishop.new("black"), Knight.new("black"), Rook.new("black")]
+      else Array.new(8)
+      end
+    end
   end
 
   def legal_move?(piece, from, to)
