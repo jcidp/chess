@@ -35,5 +35,6 @@ class King
     self.color = color
     self.type = "king"
     self.code = color == "white" ? "\u2654" : "\u265A"
+    self.unmoved = true
   end
 end

@@ -18,7 +18,7 @@ class Board
 
   def move(color, from, to)
     if ["O-O", "O-O-O"].include?(from)
-      castle(color, from, to)
+      castle(color, from)
     else
       move_piece(color, from, to)
     end
@@ -73,8 +73,35 @@ class Board
     true
   end
 
-  def castle(type, color)
-    nil
+  def castle(color, type)
+    row = color == "white" ? 0 : 7
+    col, king_col, rook_col = type == "O-O" ? [7, 6, 5] : [0, 2, 3] # col, sign = type == "O-O" ? [7, :-] : [0, :+]
+    king = board.dig(row, 4)
+    rook = board.dig(row, col)
+    return false unless valid_castle?(color, row, col, king, rook)
+
+    king.unmoved = false
+    rook.unmoved = false
+    self.en_passant = { color: nil, square: nil }
+    change_square(board, [row, 4], nil)
+    change_square(board, [row, col], nil)
+    change_square(board, [row, king_col], king)
+    change_square(board, [row, rook_col], rook)
+  end
+
+  def valid_castle?(color, row, col, king, rook)
+    return false unless king&.unmoved && rook&.unmoved && !check?(color)
+
+    sign = col == 7 ? :+ : :-
+    ((col - 4).abs - 1).times.all? do |i|
+      square_col = 4.send(sign, i + 1)
+      square_empty = board.dig(row, square_col).nil?
+      if i == 2
+        square_empty
+      else
+        square_empty && !self_check?([row, 4], [row, square_col])
+      end
+    end
   end
 
   def promote(square)

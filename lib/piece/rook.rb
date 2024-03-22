@@ -43,5 +43,6 @@ class Rook
     self.color = color
     self.type = "rook"
     self.code = color == "white" ? "\u2656" : "\u265C"
+    self.unmoved = true
   end
 end
