@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "yaml"
 require "./lib/piece/knight"
 require "./lib/piece/bishop"
 require "./lib/piece/rook"
@@ -25,13 +26,13 @@ class Board
   end
 
   def promote(type, color)
-    new_piece = case type
-                when %w[q Q].include?(type) then Queen.new(color)
-                when %w[r R].include?(type) then Rook.new(color)
-                when %w[b B].include?(type) then Bishop.new(color)
-                when %w[n N].include?(type) then Knight.new(color)
-                end
-    change_square(board, promote_square, new_piece)
+    promoted_piece = case type
+                     when %w[q Q].include?(type) then Queen.new(color)
+                     when %w[r R].include?(type) then Rook.new(color)
+                     when %w[b B].include?(type) then Bishop.new(color)
+                     when %w[n N].include?(type) then Knight.new(color)
+                     end
+    change_square(board, promote_square, promoted_piece)
     self.promote_square = nil
     display
   end
@@ -46,6 +47,28 @@ class Board
     elsif stalemate?(attacked_color)
       self.winner = "tie"
     end
+  end
+
+  def to_hash
+    arr = []
+    board.each do |row|
+      row_arr = []
+      row.each { |square| row_arr << square&.to_hash }
+      arr << row_arr
+    end
+    {
+      board: arr,
+      en_passant: en_passant
+    }
+  end
+
+  def load_board(hash)
+    self.board = hash[:board].map do |row|
+      row.map do |square|
+        square ? new_piece(square) : nil
+      end
+    end
+    self.en_passant = hash[:en_passant]
   end
 
   # rubocop:disable Metrics/AbcSize
@@ -308,17 +331,17 @@ class Board
     end
     false
   end
-end
 
-# board = Board.new
-# board.display
-# board.move_piece([6, 2], [4, 2])
-# board.display
-# board.move_piece([4, 2], [3, 2])
-# board.display
-# board.move_piece([1, 3], [3, 3])
-# board.display
-# board.move_piece([1, 2], [2, 3])
-# board.display
-# board.move_piece([3, 2], [2, 3])
-# board.display
+  def new_piece(hash)
+    piece = case hash[:type]
+            when "pawn" then Pawn.new(hash[:color])
+            when "rook" then Rook.new(hash[:color])
+            when "knight" then Knight.new(hash[:color])
+            when "bishop" then Bishop.new(hash[:color])
+            when "queen" then Queen.new(hash[:color])
+            when "king" then King.new(hash[:color])
+            end
+    piece.unmoved = hash[:unmoved]
+    piece
+  end
+end

@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "yaml"
 require "./lib/board"
 
 # Control game logic
@@ -25,6 +26,9 @@ class Game
     valid = false
     until valid
       from, to = clean_move(player_input)
+      return save_game if from == "save"
+      return load_game if from == "load"
+
       valid = board.move(current_player, from, to)
     end
     board.display
@@ -35,7 +39,7 @@ class Game
 
   def player_input
     input = ""
-    until /^[a-h][1-8] [a-h][1-8]$/.match(input) || ["O-O", "O-O-O"].include?(input)
+    until /^[a-h][1-8] [a-h][1-8]$/.match(input) || ["O-O", "O-O-O", "save", "load"].include?(input)
       puts "Enter a valid move in format: a1 h8. Use O-O & O-O-O for castling."
       input = gets.chomp
     end
@@ -43,7 +47,7 @@ class Game
   end
 
   def clean_move(move)
-    return [move, nil] if ["O-O", "O-O-O"].include?(move)
+    return [move, nil] if ["O-O", "O-O-O", "save", "load"].include?(move)
 
     move.split(" ").map do |e|
       e.split("").each_with_index.map { |char, i| i.zero? ? char.ord - 97 : char.to_i - 1 }.reverse
@@ -65,7 +69,31 @@ class Game
   end
 
   def end_game(winner)
+    return puts "Game saved" if winner == "save"
+
     puts winner == "tie" ? "It's a stalemate!" : "Checkmate!\n#{winner} won!"
+  end
+
+  def save_game
+    File.open("my_save.yaml", "w") do |f|
+      f.puts serialize
+    end
+    board.winner = "save"
+  end
+
+  def serialize
+    {
+      board: board.to_hash,
+      current_player: current_player
+    }.to_yaml
+  end
+
+  def load_game
+    f = File.open("my_save.yaml")
+    hash = YAML.safe_load(f, permitted_classes: [Symbol])
+    board.load_board(hash[:board])
+    self.current_player = hash[:current_player]
+    board.display
   end
 end
 

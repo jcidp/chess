@@ -1,10 +1,9 @@
 # frozen_string_literal: true
 
-# Represents a Rook piece
-class Rook
-  attr_accessor :unmoved
-  attr_reader :code, :color, :type
+require_relative "../piece"
 
+# Represents a Rook piece
+class Rook < Piece
   def path(from, to)
     result = []
     row_sign = (to[0] - from[0]).positive? ? :+ : :-
@@ -37,12 +36,9 @@ class Rook
 
   private
 
-  attr_writer :code, :color, :type
-
   def initialize(color)
-    self.color = color
+    super
     self.type = "rook"
     self.code = color == "white" ? "\u2656" : "\u265C"
-    self.unmoved = true
   end
 end

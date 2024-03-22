@@ -1,14 +1,9 @@
 # frozen_string_literal: true
 
+require_relative "../piece"
+
 # Represents a King piece
-class King
-  attr_accessor :unmoved
-  attr_reader :code, :color, :type
-
-  def path(*)
-    []
-  end
-
+class King < Piece
   def adjacent_squares(from)
     result = {}
     delta_combinations.each do |deltas|
@@ -29,12 +24,9 @@ class King
 
   private
 
-  attr_writer :code, :color, :type
-
   def initialize(color)
-    self.color = color
+    super
     self.type = "king"
     self.code = color == "white" ? "\u2654" : "\u265A"
-    self.unmoved = true
   end
 end

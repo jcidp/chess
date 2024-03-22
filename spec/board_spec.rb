@@ -16,12 +16,12 @@ describe Board do
     end
   end
 
-  describe "#move_piece" do
+  describe "#move" do
     context "when trying to move an empty space" do
       it "doesn't change the board" do
         from = [2, 5]
         to = [4, 6]
-        expect { test_board.move_piece(from, to) }.not_to(change { test_board.instance_variable_get(:@board) })
+        expect { test_board.move("white", from, to) }.not_to(change { test_board.instance_variable_get(:@board) })
       end
     end
 
@@ -29,19 +29,19 @@ describe Board do
       it "a rook can't jump pieces" do
         from = [0, 0]
         to = [2, 0]
-        expect { test_board.move_piece(from, to) }.not_to(change { test_board.instance_variable_get(:@board) })
+        expect { test_board.move("white", from, to) }.not_to(change { test_board.instance_variable_get(:@board) })
       end
 
       it "a knight can jump pieces" do
         from = [0, 6]
         to = [2, 5]
-        expect { test_board.move_piece(from, to) }.to(change { test_board.instance_variable_get(:@board) })
+        expect { test_board.move("white", from, to) }.to(change { test_board.instance_variable_get(:@board) })
       end
 
       it "a knight can't move to a square occupied an ally" do
         from = [0, 6]
         to = [1, 4]
-        expect { test_board.move_piece(from, to) }.not_to(change { test_board.instance_variable_get(:@board) })
+        expect { test_board.move("white", from, to) }.not_to(change { test_board.instance_variable_get(:@board) })
       end
     end
   end
@@ -80,14 +80,14 @@ describe Board do
       end
 
       it "returns true on black move" do
-        result = test_board.stalemate?("black")
+        result = test_board.send(:stalemate?, "black")
         expect(result).to be true
       end
     end
 
     context "when the game starts" do
       it "returns false" do
-        result = test_board.stalemate?("white")
+        result = test_board.send(:stalemate?, "white")
         expect(result).to be false
       end
     end
@@ -104,7 +104,7 @@ describe Board do
       end
 
       it "returns true" do
-        result = test_board.mate?("black")
+        result = test_board.send(:mate?, "black")
         expect(result).to be true
       end
     end
@@ -119,7 +119,7 @@ describe Board do
       end
 
       it "returns false" do
-        result = test_board.mate?("black")
+        result = test_board.send(:mate?, "black")
         expect(result).to be false
       end
     end
@@ -135,7 +135,7 @@ describe Board do
       end
 
       it "returns false" do
-        result = test_board.mate?("black")
+        result = test_board.send(:mate?, "black")
         expect(result).to be false
       end
     end
@@ -151,7 +151,7 @@ describe Board do
       end
 
       it "returns false" do
-        result = test_board.mate?("black")
+        result = test_board.send(:mate?, "black")
         expect(result).to be false
       end
     end
@@ -169,7 +169,7 @@ describe Board do
 
       it "returns true" do
         test_board.display
-        result = test_board.mate?("black")
+        result = test_board.send(:mate?, "black")
         expect(result).to be true
       end
     end

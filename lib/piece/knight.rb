@@ -1,14 +1,9 @@
 # frozen_string_literal: true
 
+require_relative "../piece"
+
 # Represents a knight piece
-class Knight
-  attr_accessor :unmoved
-  attr_reader :code, :color, :type
-
-  def path(*)
-    []
-  end
-
+class Knight < Piece
   def adjacent_squares(from)
     result = {}
     symbol_combinations.each do |symbols|
@@ -32,10 +27,8 @@ class Knight
 
   private
 
-  attr_writer :code, :color, :type
-
   def initialize(color)
-    self.color = color
+    super
     self.type = "knight"
     self.code = color == "white" ? "\u2658" : "\u265E"
   end

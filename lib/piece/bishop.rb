@@ -1,10 +1,9 @@
 # frozen_string_literal: true
 
-# Represents a Bishop piece
-class Bishop
-  attr_accessor :unmoved
-  attr_reader :code, :color, :type
+require_relative "../piece"
 
+# Represents a Bishop piece
+class Bishop < Piece
   def path(from, to)
     result = []
     row_sign = (to[0] - from[0]).positive? ? :+ : :-
@@ -39,10 +38,8 @@ class Bishop
 
   private
 
-  attr_writer :code, :color, :type
-
   def initialize(color)
-    self.color = color
+    super
     self.type = "bishop"
     self.code = color == "white" ? "\u2657" : "\u265D"
   end

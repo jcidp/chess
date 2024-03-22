@@ -1,10 +1,9 @@
 # frozen_string_literal: true
 
-# Represents a Queen piece
-class Queen
-  attr_accessor :unmoved
-  attr_reader :code, :color, :type
+require_relative "../piece"
 
+# Represents a Queen piece
+class Queen < Piece
   def path(from, to)
     result = []
     row_sign, col_sign, fixed_row, fixed_col = signs_and_fixed(from, to)
@@ -23,10 +22,8 @@ class Queen
 
   private
 
-  attr_writer :code, :color, :type
-
   def initialize(color)
-    self.color = color
+    super
     self.type = "queen"
     self.code = color == "white" ? "\u2655" : "\u265B"
   end

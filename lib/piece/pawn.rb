@@ -1,14 +1,9 @@
 # frozen_string_literal: true
 
+require_relative "../piece"
+
 # Represents a Pawn piece
-class Pawn
-  attr_accessor :unmoved
-  attr_reader :code, :color, :type
-
-  def path(*)
-    []
-  end
-
+class Pawn < Piece
   def adjacent_squares(from)
     row, col = from
     sign = color == "white" ? :+ : :-
@@ -23,12 +18,9 @@ class Pawn
 
   private
 
-  attr_writer :code, :color, :type
-
   def initialize(color)
-    self.color = color
+    super
     self.type = "pawn"
     self.code = color == "white" ? "\u2659" : "\u265F"
-    self.unmoved = true
   end
 end
