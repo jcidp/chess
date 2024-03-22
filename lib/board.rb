@@ -9,7 +9,7 @@ require "./lib/piece/pawn"
 
 # Build and control the board for the game
 class Board
-  attr_accessor :winner
+  attr_accessor :winner, :promote_square
 
   def reset
     reset_board
@@ -24,22 +24,16 @@ class Board
     end
   end
 
-  # Assumes it receives arrays with 2 digits between 0-7
-  def move_piece(color, from, to)
-    piece = board.dig(from[0], from[1])
-    return false unless piece && piece.color == color && legal_move?(piece, from, to)
-
-    piece.unmoved = false if piece.unmoved
-    # In game logic, check if piece is pawn and if row is the other side to ask user promote input
-    change_square(board, from, nil)
-    change_square(board, to, piece)
-    take_en_passant(board, piece.color, to) if to == en_passant[:square] && en_passant[:color] != piece.color
-    update_en_passant(piece, from, to)
-    true
-  end
-
-  def check?(attacked_color)
-    board_check?(board, attacked_color)
+  def promote(type, color)
+    new_piece = case type
+                when %w[q Q].include?(type) then Queen.new(color)
+                when %w[r R].include?(type) then Rook.new(color)
+                when %w[b B].include?(type) then Bishop.new(color)
+                when %w[n N].include?(type) then Knight.new(color)
+                end
+    change_square(board, promote_square, new_piece)
+    self.promote_square = nil
+    display
   end
 
   def game_over?(attacked_color)
@@ -52,6 +46,98 @@ class Board
     elsif stalemate?(attacked_color)
       self.winner = "tie"
     end
+  end
+
+  # rubocop:disable Metrics/AbcSize
+
+  def display
+    puts "  #{'-' * 33}"
+    7.downto(0) do |row|
+      puts(8.times.reduce("#{row + 1} |") do |str, col|
+        square = board.dig(row, col)
+        "#{str} #{square ? square.code.encode('utf-8') : ' '} |"
+      end)
+      puts "  |#{'---|' * 8}" unless row.zero?
+    end
+    puts "  #{'-' * 33}"
+    puts(8.times.reduce("   ") { |str, col| "#{str} #{(col + 97).chr}  " })
+  end
+
+  # rubocop:enable Metrics/AbcSize
+
+  private
+
+  attr_accessor :board, :en_passant
+
+  def initialize
+    reset
+    self.en_passant = { color: nil, square: nil }
+    self.promote_square = nil
+  end
+
+  def reset_board
+    self.board = Array.new(8) do |row|
+      case row
+      when 0 then [Rook.new("white"), Knight.new("white"), Bishop.new("white"), Queen.new("white"), King.new("white"),
+                   Bishop.new("white"), Knight.new("white"), Rook.new("white")]
+      when 1 then Array.new(8) { Pawn.new("white") }
+      when 6 then Array.new(8) { Pawn.new("black") }
+      when 7 then [Rook.new("black"), Knight.new("black"), Bishop.new("black"), Queen.new("black"), King.new("black"),
+                   Bishop.new("black"), Knight.new("black"), Rook.new("black")]
+      else Array.new(8)
+      end
+    end
+  end
+
+  # Assumes it receives arrays with 2 digits between 0-7
+  def move_piece(color, from, to)
+    piece = board.dig(from[0], from[1])
+    return false unless piece && piece.color == color && legal_move?(piece, from, to)
+
+    piece.unmoved = false if piece.unmoved
+    # In game logic, check if piece is pawn and if row is the other side to ask user promote input
+    change_square(board, from, nil)
+    change_square(board, to, piece)
+    take_en_passant(board, piece.color, to) if to == en_passant[:square] && en_passant[:color] != piece.color
+    update_en_passant(piece, from, to)
+    promote?(to, piece)
+    true
+  end
+
+  def legal_move?(piece, from, to)
+    valid_adjacent_squares(board, piece, from).keys.include?(to) && !self_check?(from, to)
+  end
+
+  def valid_adjacent_squares(used_board, piece, from)
+    valid_squares = clean_adjacent_list(used_board, piece, from)
+    return valid_squares.merge(pawn_takes(used_board, piece, from)) if piece.type == "pawn"
+
+    valid_squares
+  end
+
+  def clean_adjacent_list(used_board, piece, from)
+    piece.adjacent_squares(from).filter do |to, path|
+      target = used_board.dig(to[0], to[1])
+      (target.nil? || target.color != piece.color) && clear_path?(used_board, path)
+    end
+  end
+
+  def pawn_takes(used_board, pawn, from)
+    sign = pawn.color == "white" ? :+ : :-
+    takes = {}
+    en_passant_row = en_passant[:square]&.first
+    row = from[0].send(sign, 1)
+    %i[+ -].each do |col_symbol|
+      col = from[1].send(col_symbol, 1)
+      take_option = used_board.dig(row, col) || en_passant_row
+      take_color = en_passant[:color] || take_option&.color
+      takes[[row, col]] = [] if take_option && take_color != pawn.color && en_passant_row == row
+    end
+    takes
+  end
+
+  def check?(attacked_color)
+    board_check?(board, attacked_color)
   end
 
   def mate?(attacked_color)
@@ -102,81 +188,6 @@ class Board
         square_empty && !self_check?([row, 4], [row, square_col])
       end
     end
-  end
-
-  def promote(square)
-    square
-  end
-
-  # rubocop:disable Metrics/AbcSize
-
-  def display
-    puts "  #{'-' * 33}"
-    7.downto(0) do |row|
-      puts(8.times.reduce("#{row + 1} |") do |str, col|
-        square = board.dig(row, col)
-        "#{str} #{square ? square.code.encode('utf-8') : ' '} |"
-      end)
-      puts "  |#{'---|' * 8}" unless row.zero?
-    end
-    puts "  #{'-' * 33}"
-    puts(8.times.reduce("   ") { |str, col| "#{str} #{(col + 97).chr}  " })
-  end
-
-  # rubocop:enable Metrics/AbcSize
-
-  private
-
-  attr_accessor :board, :en_passant
-
-  def initialize
-    reset
-    self.en_passant = { color: nil, square: nil }
-  end
-
-  def reset_board
-    self.board = Array.new(8) do |row|
-      case row
-      when 0 then [Rook.new("white"), Knight.new("white"), Bishop.new("white"), Queen.new("white"), King.new("white"),
-                   Bishop.new("white"), Knight.new("white"), Rook.new("white")]
-      when 1 then Array.new(8) { Pawn.new("white") }
-      when 6 then Array.new(8) { Pawn.new("black") }
-      when 7 then [Rook.new("black"), Knight.new("black"), Bishop.new("black"), Queen.new("black"), King.new("black"),
-                   Bishop.new("black"), Knight.new("black"), Rook.new("black")]
-      else Array.new(8)
-      end
-    end
-  end
-
-  def legal_move?(piece, from, to)
-    valid_adjacent_squares(board, piece, from).keys.include?(to) && !self_check?(from, to)
-  end
-
-  def valid_adjacent_squares(used_board, piece, from)
-    valid_squares = clean_adjacent_list(used_board, piece, from)
-    return valid_squares.merge(pawn_takes(used_board, piece, from)) if piece.type == "pawn"
-
-    valid_squares
-  end
-
-  def clean_adjacent_list(used_board, piece, from)
-    piece.adjacent_squares(from).filter do |to, path|
-      target = used_board.dig(to[0], to[1])
-      (target.nil? || target.color != piece.color) && clear_path?(used_board, path)
-    end
-  end
-
-  def pawn_takes(used_board, pawn, from)
-    sign = pawn.color == "white" ? :+ : :-
-    takes = {}
-    row = from[0].send(sign, 1)
-    %i[+ -].each do |col_symbol|
-      col = from[1].send(col_symbol, 1)
-      take_option = used_board.dig(row, col) || en_passant[:square]
-      take_color = en_passant[:color] || take_option&.color
-      takes[[row, col]] = [] if take_option && take_color != pawn.color
-    end
-    takes
   end
 
   def board_check?(used_board, attacked_color)
@@ -236,6 +247,11 @@ class Board
       copy << row.dup
     end
     copy
+  end
+
+  def promote?(to, piece)
+    row = to[0]
+    self.promote_square = to if piece.type == "pawn" && (row.zero? || row == 7)
   end
 
   def checking_squares(attacker_color, attacked_king_position)

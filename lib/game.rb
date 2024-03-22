@@ -28,6 +28,7 @@ class Game
       valid = board.move(current_player, from, to)
     end
     board.display
+    board.promote(promote_input, current_player) if board.promote_square
     next_player
     board.game_over?(current_player)
   end
@@ -42,11 +43,21 @@ class Game
   end
 
   def clean_move(move)
-    return [move, current_player] if ["O-O", "O-O-O"].include?(move)
+    return [move, nil] if ["O-O", "O-O-O"].include?(move)
 
     move.split(" ").map do |e|
       e.split("").each_with_index.map { |char, i| i.zero? ? char.ord - 97 : char.to_i - 1 }.reverse
     end
+  end
+
+  def promote_input
+    input = ""
+    until %w[q Q n N r R b B].include?(input)
+      puts "You can promote your pawn!\nEnter the letter of the piece you want to promote your pawn to:\n
+        q: Queen\nr: Rook\nb: Bishop\nn: Knight"
+      input = gets.chomp
+    end
+    input
   end
 
   def next_player
@@ -54,8 +65,7 @@ class Game
   end
 
   def end_game(winner)
-    puts "Checkmate!"
-    puts winner == "tie" ? "It's a stalemate!" : "#{winner} won!"
+    puts winner == "tie" ? "It's a stalemate!" : "Checkmate!\n#{winner} won!"
   end
 end
 
